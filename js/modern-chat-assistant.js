@@ -26,7 +26,8 @@
   chatPopup.style.right = '32px';
   chatPopup.style.bottom = '110px';
   chatPopup.style.width = '370px';
-  chatPopup.style.maxHeight = '520px';
+  chatPopup.style.maxHeight = '90vh';
+  chatPopup.style.height = '700px';
   chatPopup.style.background = '#181826';
   chatPopup.style.borderRadius = '18px';
   chatPopup.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
