@@ -211,7 +211,7 @@ function generateQR(canvas, text) {
     const size = canvas.width;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, size, size);
-    // Simple pattern QR simulation
+    // Simple pattern QR simulation (no special characters)
     ctx.fillStyle = '#1A1A2E';
     const mod = 21;
     const cell = size / mod;
