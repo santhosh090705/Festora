@@ -335,16 +335,19 @@
             const user = Auth.getUser();
             if (!user) return;
 
-            // Fix avatar: use user's avatar if available, else use initial from name or email
-            let avatarText = '?';
-            if (user.avatar && typeof user.avatar === 'string' && user.avatar !== 'undefined') {
-                avatarText = user.avatar;
-            } else if (user.name && typeof user.name === 'string') {
-                avatarText = user.name[0].toUpperCase();
-            } else if (user.email && typeof user.email === 'string') {
-                avatarText = user.email[0].toUpperCase();
+            // Fix avatar: use user's avatar image if available, else use initial from name or email
+            const avatarEl = document.getElementById('profile-avatar');
+            if (user.avatar && user.avatar.startsWith('http')) {
+                avatarEl.innerHTML = `<img src="${user.avatar}" alt="avatar" style="width:64px;height:64px;border-radius:50%">`;
+            } else {
+                let avatarText = '?';
+                if (user.name && typeof user.name === 'string') {
+                    avatarText = user.name[0].toUpperCase();
+                } else if (user.email && typeof user.email === 'string') {
+                    avatarText = user.email[0].toUpperCase();
+                }
+                avatarEl.textContent = avatarText;
             }
-            document.getElementById('profile-avatar').textContent = avatarText;
 
             // Fix name: fallback to email prefix if name is missing
             let displayName = user.name && user.name !== 'undefined' ? user.name : (user.email ? user.email.split('@')[0] : 'User');
