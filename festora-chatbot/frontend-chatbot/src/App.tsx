@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { Send, Bot } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { EVENTS } from './data';
@@ -20,7 +21,7 @@ interface Msg {
   text: string;
   opts?: Opt[];
   concert?: EventMatch;
-}
+// ...existing code...
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
@@ -210,143 +211,43 @@ export default function App() {
     if (!val) return;
     setInput('');
 
-    if (step === 'ENTER_QTY') {
-      const n = parseInt(val);
-      if (isNaN(n) || n < 1 || n > 10) {
-        userSay(val);
-        botSay('Please enter a number between 1 and 10.');
-        return;
-      }
-      userSay(val);
-      if (!user) {
-        setStep('NEED_LOGIN');
-        botSay('You need to be logged in to book. Sign in with Google:', [
-          { label: '🔐 Sign in with Google', action: doLogin },
-        ]);
-        return;
-      }
-      doConfirm(n);
-    } else {
-      userSay(val);
-      botSay("Use the buttons above to navigate!", [{ label: '🎵 Browse Events', action: doBrowse }]);
-    }
-  };
-
-  // Save current booking state before OAuth redirect so it survives the page reload
-  function savePendingBooking(n?: number) {
-    if (concert && ticket) {
-      sessionStorage.setItem('festora_pending_booking', JSON.stringify({
-        savedConcert: concert,
-        savedTicket: ticket,
-        savedQty: n ?? qty ?? 1,
-      }));
-    }
-  }
-
-  // Used after OAuth comes back — runs doConfirm with restored data
-  function doConfirmWith(c: EventMatch, t: TicketType, n: number) {
-    const total = t.price * n;
-    const summary = [
-      'Please confirm your booking:',
-      '',
-      'Event:  ' + c.title,
-      'Venue:  ' + c.venue,
-      'Date:   ' + new Date(c.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
-      'Ticket: ' + t.name + '  x' + n,
-      'Total:  ₹' + total.toLocaleString('en-IN'),
-    ].join('\n');
-    botSay(summary, [
-      { label: '✅ Confirm & Book', action: () => doBookWith(c, t, n) },
-      { label: '❌ Cancel', action: doCancel },
-    ]);
-  }
-
-  async function doBookWith(c: EventMatch, t: TicketType, n: number) {
-    const sess = await supabase.auth.getSession();
-    const u = sess.data.session?.user;
-    if (!u) { botSay('Session expired. Please sign in again.', [{ label: '🔐 Sign in', action: doLogin }]); return; }
-    userSay('Confirm & Book');
-    botSay('Processing your booking…');
-    const payload = {
-      user_id: u.id,
-      booking_id: 'FST' + Date.now().toString(36).toUpperCase(),
-      ticket_id: 'TKT-' + Math.random().toString(36).slice(2, 10).toUpperCase(),
-      event_id: c.id, event_title: c.title, event_date: c.date, event_time: c.time,
-      venue: c.venue, ticket_type: t.name, ticket_type_id: t.id,
-      quantity: n, total_amount: t.price * n,
-      name: u.user_metadata?.full_name || u.email?.split('@')[0],
-      email: u.email, phone: '', payment_method: 'Chatbot', status: 'confirmed', image: c.thumb,
-    };
-    const { error } = await supabase.from('bookings').insert([payload]);
-    if (error) {
-      botSay('Booking failed: ' + error.message, [{ label: '🔄 Try Again', action: () => doBookWith(c, t, n) }]);
-    } else {
-      setConcert(null); setTicket(null); setQty(0); setStep('GREET');
-      botSay('🎉 Booking confirmed! ID: ' + payload.booking_id + '\nView your tickets in your Festora profile!', [
-        { label: '🎵 Book Another', action: doBrowse }
-      ], c);
-    }
-  }
-
-  async function doLogin(pendingQty?: number) {
-    userSay('Sign in with Google');
-    savePendingBooking(pendingQty);
-    try {
-      // Always redirect back to THIS chatbot page, not the main Festora site
-      const chatbotUrl = window.location.origin + window.location.pathname;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: chatbotUrl }
-      });
-      if (error) throw error;
-      botSay('Opening Google sign-in… Come back to this page after signing in and your booking will resume automatically! 🎵');
-    } catch {
-      botSay("Couldn't open sign-in. Make sure your Supabase anon key is set in the .env file.");
-    }
-  }
-
-  const lastId = msgs[msgs.length - 1]?.id;
-
-  return (
-    <div className="app-container">
-      <div className="chatbot-window">
+    // Chatbot UI as a component
+    const chatbotUI = (
+      <div className="chatbot-window floating-chatbot">
         {/* Header */}
         <div className="chatbot-header">
-          <div className="bot-avatar"><Bot size={20} color="white" /></div>
+          <div className="bot-avatar"><Bot size={28} /></div>
           <div className="header-info">
             <h2>Festora Assistant</h2>
-            <p>{user ? `${user.user_metadata?.full_name || user.email}` : 'Sign in to book tickets'}</p>
+            <p>Ask about concerts, tickets, or artists!</p>
           </div>
-          {user && (
-            <button className="logout-btn" title="Sign out" onClick={() => supabase.auth.signOut()}>✕</button>
-          )}
-          {!user && (
-            <button className="login-pill" onClick={() => doLogin()}>Sign in</button>
+          {user ? (
+            <button className="logout-btn" onClick={handleLogout} title="Logout">⎋</button>
+          ) : (
+            <button className="login-pill" onClick={handleLogin}>Login</button>
           )}
         </div>
 
-        {/* Messages */}
+        {/* Chat Area */}
         <div className="chat-history">
-          {msgs.map(m => (
+          {msgs.map((m, i) => (
             <div key={m.id} className={`message ${m.sender}`}>
-              {m.text.split('\n').map((line, i) => (
-                <React.Fragment key={i}>{i > 0 && <br />}{line}</React.Fragment>
-              ))}
+              {m.text}
               {m.concert && (
                 <div className="concert-card-mini">
-                  <img src={m.concert.thumb} alt={m.concert.title} />
+                  <img src={m.concert.thumb} alt={m.concert.name} />
                   <div>
-                    <strong>{m.concert.title}</strong>
-                    <span>{m.concert.venue}</span>
-                    <span className="price-tag">{m.concert.priceRange}</span>
+                    <strong>{m.concert.name}</strong>
+                    <span>{m.concert.date} · {m.concert.venue}</span>
+                    <span className="price-tag">₹{m.concert.price}</span>
                   </div>
                 </div>
               )}
               {m.opts && (
                 <div className="message-options">
-                  {m.opts.map((o, i) => (
+                  {m.opts.map((o, j) => (
                     <button
-                      key={i}
+                      key={j}
                       className="option-btn"
                       disabled={typing || m.id !== lastId}
                       onClick={o.action}
@@ -383,8 +284,127 @@ export default function App() {
           <p className="powered-by">Powered by Festora · Supabase</p>
         </div>
       </div>
+    );
+
+    // Render chatbot as floating widget at bottom right
+    useEffect(() => {
+      let el = document.getElementById('floating-chatbot-root');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'floating-chatbot-root';
+        document.body.appendChild(el);
+        const root = createRoot(el);
+        root.render(chatbotUI);
+      }
+      return () => {
+        if (el) {
+          el.remove();
+        }
+      };
+    }, [msgs, typing, input, user, step, concert, ticket, qty]);
+
+    // Optionally render nothing in main layout
+    return null;
+  }
+}
+
+async function doLogin(pendingQty?: number) {
+  userSay('Sign in with Google');
+  savePendingBooking(pendingQty);
+  try {
+    // Always redirect back to THIS chatbot page, not the main Festora site
+    const chatbotUrl = window.location.origin + window.location.pathname;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: chatbotUrl }
+    });
+    if (error) throw error;
+    botSay('Opening Google sign-in… Come back to this page after signing in and your booking will resume automatically! 🎵');
+  } catch {
+    botSay("Couldn't open sign-in. Make sure your Supabase anon key is set in the .env file.");
+  }
+}
+
+const lastId = msgs[msgs.length - 1]?.id;
+
+return (
+  <div className="app-container">
+    <div className="chatbot-window">
+      {/* Header */}
+      <div className="chatbot-header">
+        <div className="bot-avatar"><Bot size={20} color="white" /></div>
+        <div className="header-info">
+          <h2>Festora Assistant</h2>
+          <p>{user ? `${user.user_metadata?.full_name || user.email}` : 'Sign in to book tickets'}</p>
+        </div>
+        {user && (
+          <button className="logout-btn" title="Sign out" onClick={() => supabase.auth.signOut()}>✕</button>
+        )}
+        {!user && (
+          <button className="login-pill" onClick={() => doLogin()}>Sign in</button>
+        )}
+      </div>
+
+      {/* Messages */}
+      <div className="chat-history">
+        {msgs.map(m => (
+          <div key={m.id} className={`message ${m.sender}`}>
+            {m.text.split('\n').map((line, i) => (
+              <React.Fragment key={i}>{i > 0 && <br />}{line}</React.Fragment>
+            ))}
+            {m.concert && (
+              <div className="concert-card-mini">
+                <img src={m.concert.thumb} alt={m.concert.title} />
+                <div>
+                  <strong>{m.concert.title}</strong>
+                  <span>{m.concert.venue}</span>
+                  <span className="price-tag">{m.concert.priceRange}</span>
+                </div>
+              </div>
+            )}
+            {m.opts && (
+              <div className="message-options">
+                {m.opts.map((o, i) => (
+                  <button
+                    key={i}
+                    className="option-btn"
+                    disabled={typing || m.id !== lastId}
+                    onClick={o.action}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {typing && (
+          <div className="typing-indicator">
+            <div className="dot" /><div className="dot" /><div className="dot" />
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="chat-input-area">
+        <form className="input-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder={step === 'ENTER_QTY' ? 'Number of tickets (1–10)…' : 'Type a message…'}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            disabled={typing}
+          />
+          <button type="submit" className="send-btn" disabled={!input.trim() || typing}>
+            <Send size={16} />
+          </button>
+        </form>
+        <p className="powered-by">Powered by Festora · Supabase</p>
+      </div>
     </div>
-  );
+  </div>
+);
 }
 
 async function fetchEvents() {

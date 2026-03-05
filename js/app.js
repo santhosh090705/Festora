@@ -39,6 +39,9 @@ const supabaseClient = window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL'
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
+// Expose for chatbot-widget.js so only ONE client instance exists (prevents OAuth code double-exchange on login)
+window.festoraSupabaseClient = supabaseClient;
+
 // ---- AUTH SYSTEM ----
 const Auth = (() => {
     let sessionCache = null;
@@ -132,19 +135,19 @@ function setupNavbar() {
     if (!nav) return;
     window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
 
-        const session = Auth.getSession();
-        const navActions = document.getElementById('nav-actions');
-        if (navActions) {
-                if (session) {
-                        // Use Gmail avatar if available, else fallback to initial
-                        let avatarHtml = '';
-                        if (session.user && session.user.user_metadata && session.user.user_metadata.avatar_url) {
-                                avatarHtml = `<img src="${session.user.user_metadata.avatar_url}" alt="avatar" class="nav-avatar-img" style="width:32px;height:32px;border-radius:50%">`;
-                        } else {
-                                const initial = session.name && session.name !== 'undefined' ? session.name[0].toUpperCase() : (session.email ? session.email[0].toUpperCase() : '?');
-                                avatarHtml = `<div class="nav-avatar" title="${session.name || ''}">${initial}</div>`;
-                        }
-                        navActions.innerHTML = `
+    const session = Auth.getSession();
+    const navActions = document.getElementById('nav-actions');
+    if (navActions) {
+        if (session) {
+            // Use Gmail avatar if available, else fallback to initial
+            let avatarHtml = '';
+            if (session.user && session.user.user_metadata && session.user.user_metadata.avatar_url) {
+                avatarHtml = `<img src="${session.user.user_metadata.avatar_url}" alt="avatar" class="nav-avatar-img" style="width:32px;height:32px;border-radius:50%">`;
+            } else {
+                const initial = session.name && session.name !== 'undefined' ? session.name[0].toUpperCase() : (session.email ? session.email[0].toUpperCase() : '?');
+                avatarHtml = `<div class="nav-avatar" title="${session.name || ''}">${initial}</div>`;
+            }
+            navActions.innerHTML = `
                 <div class="nav-search">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" placeholder="Search events..." id="nav-search-input" onkeydown="if(event.key==='Enter')navSearch()">
@@ -153,16 +156,16 @@ function setupNavbar() {
                     ${avatarHtml}
                 </a>
                 <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Logout</button>`;
-                } else {
-                        navActions.innerHTML = `
+        } else {
+            navActions.innerHTML = `
                 <div class="nav-search">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" placeholder="Search events..." id="nav-search-input" onkeydown="if(event.key==='Enter')navSearch()">
                 </div>
                 <a href="login.html" class="btn btn-outline btn-sm">Log In</a>
                 <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>`;
-                }
         }
+    }
     // Hamburger
     const ham = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
