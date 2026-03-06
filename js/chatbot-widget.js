@@ -8,7 +8,8 @@
 
     // 🔑 ADD YOUR OPENROUTER API KEY HERE:
     // Get a free key at https://openrouter.ai/
-    window.OPENROUTER_API_KEY = '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';
+    // 🛡️ API KEY lives in js/config.js (Git-ignored) or window.CONFIG
+    window.OPENROUTER_API_KEY = (window.CONFIG && window.CONFIG.OPENROUTER_API_KEY) || 'YOUR_OPENROUTER_KEY';
 
     /* ─── State ─────────────────────────────────────────────── */
     let msgs = [];

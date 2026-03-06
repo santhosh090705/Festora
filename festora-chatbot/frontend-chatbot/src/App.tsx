@@ -239,7 +239,7 @@ export default function App() {
     }
   }
 
-  const OPENROUTER_API_KEY = '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';
+  const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
   async function fetchQwenResponse(userText: string) {
     setTyping(true);
