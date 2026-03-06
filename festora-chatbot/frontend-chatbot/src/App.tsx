@@ -267,9 +267,11 @@ export default function App() {
       if (data.choices && data.choices[0] && data.choices[0].message) {
         setMsgs(p => [...p, { id: uid(), sender: 'bot', text: data.choices[0].message.content, opts: [{ label: '🎵 Browse Events', action: doBrowse }] }]);
       } else {
+        console.error('OpenRouter Error:', data);
         botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
       }
     } catch (error) {
+      console.error('Fetch Error:', error);
       setTyping(false);
       botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
     }
@@ -291,9 +293,20 @@ export default function App() {
       }
     } else {
       const lower = val.toLowerCase();
+      const n = parseInt(val, 10);
+      const isNumeric = /^\d+$/.test(val);
+
       const triggers = ['browse', 'event', 'show', 'concert', 'book', 'ticket', 'festival', 'discovery', 'buy', 'purchase', 'happen', 'what\'s on', 'find show', 'find event'];
+
       if (triggers.some(t => lower.includes(t))) {
         doBrowse();
+      } else if (isNumeric && n >= 1 && n <= 10 && step === 'BROWSING') {
+        const matchingEvents = EVENTS.slice(0, 10);
+        if (matchingEvents[n - 1]) {
+          doSelectEvent(matchingEvents[n - 1]);
+        } else {
+          botSay(`I don't see an event #${n} in the list. Choose one from the options!`);
+        }
       } else {
         fetchQwenResponse(val);
       }
@@ -354,9 +367,19 @@ export default function App() {
       }
     } else {
       const lower = val.toLowerCase();
+      const n = parseInt(val, 10);
+      const isNumeric = /^\d+$/.test(val);
       const triggers = ['browse', 'event', 'show', 'concert', 'book', 'ticket', 'festival', 'discovery', 'buy', 'purchase', 'happen', 'what\'s on', 'find show', 'find event'];
+
       if (triggers.some(t => lower.includes(t))) {
         doBrowse();
+      } else if (isNumeric && n >= 1 && n <= 10 && step === 'BROWSING') {
+        const matchingEvents = EVENTS.slice(0, 10);
+        if (matchingEvents[n - 1]) {
+          doSelectEvent(matchingEvents[n - 1]);
+        } else {
+          botSay(`I don't see an event #${n} in the list. Choose one from the options!`);
+        }
       } else {
         fetchQwenResponse(val);
       }

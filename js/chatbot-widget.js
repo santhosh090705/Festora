@@ -284,19 +284,26 @@
 
             const data = await response.json();
             isTyping = false;
+            removeTyping();
 
             if (data.choices && data.choices[0] && data.choices[0].message) {
-                const reply = data.choices[0].message.content;
-                msgs.push({ id: uid(), sender: 'bot', text: reply, opts: [{ label: '🎵 Browse Events', action: doBrowse }] });
+                msgs.push({
+                    id: uid(),
+                    sender: 'bot',
+                    text: data.choices[0].message.content,
+                    opts: [{ label: '🎵 Browse Events', action: doBrowse }]
+                });
                 renderMessages();
+                speakText(data.choices[0].message.content);
             } else {
-                msgs.push({ id: uid(), sender: 'bot', text: "Sorry, I'm having trouble connecting to Qwen right now. Want to browse events instead?", opts: [{ label: '🎵 Browse Events', action: doBrowse }] });
-                renderMessages();
+                console.error('OpenRouter Error:', data);
+                botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
             }
         } catch (error) {
+            console.error('Fetch Error:', error);
             isTyping = false;
-            msgs.push({ id: uid(), sender: 'bot', text: "Sorry, an error occurred while connecting to my AI brain. Want to browse events instead?", opts: [{ label: '🎵 Browse Events', action: doBrowse }] });
-            renderMessages();
+            removeTyping();
+            botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
         }
     }
 
@@ -308,9 +315,19 @@
             userSay(val);
             // Hybrid Approach: Check for specific booking intents first
             const lower = val.toLowerCase();
+            const n = parseInt(val, 10);
+            const isNumeric = /^\d+$/.test(val);
             const triggers = ['browse', 'event', 'show', 'concert', 'book', 'ticket', 'festival', 'discovery', 'buy', 'purchase', 'happen', 'what\'s on', 'find show', 'find event'];
+
             if (triggers.some(t => lower.includes(t))) {
                 doBrowse();
+            } else if (isNumeric && n >= 1 && n <= 6 && step === 'BROWSING') {
+                const top = (window.EVENTS || []).slice(0, 6);
+                if (top[n - 1]) {
+                    doSelectEvent(top[n - 1]);
+                } else {
+                    botSay(`I don't see an event #${n} in the list. Choose one from the options!`);
+                }
             } else {
                 fetchQwenResponse(val);
             }
