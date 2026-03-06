@@ -8,7 +8,7 @@
 
     // 🔑 ADD YOUR OPENROUTER API KEY HERE:
     // Get a free key at https://openrouter.ai/
-    window.OPENROUTER_API_KEY = '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';
+    window.OPENROUTER_API_KEY = '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';
 
     /* ─── State ─────────────────────────────────────────────── */
     let msgs = [];
@@ -297,13 +297,14 @@
                 speakText(data.choices[0].message.content);
             } else {
                 console.error('OpenRouter Error:', data);
-                botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
+                const detail = data.error?.message || 'The AI is currently resting.';
+                botSay(`I'm having trouble connecting to my AI brain (${detail}). Want to browse events instead?`, [{ label: '🎵 Browse Events', action: doBrowse }]);
             }
         } catch (error) {
             console.error('Fetch Error:', error);
             isTyping = false;
             removeTyping();
-            botSay("I'm having trouble connecting to my AI brain. Want to browse events instead?", [{ label: '🎵 Browse Events', action: doBrowse }]);
+            botSay(`I'm having trouble connecting to my AI brain (Network Error). Want to browse events instead?`, [{ label: '🎵 Browse Events', action: doBrowse }]);
         }
     }
 
@@ -321,8 +322,8 @@
 
             if (triggers.some(t => lower.includes(t))) {
                 doBrowse();
-            } else if (isNumeric && n >= 1 && n <= 6 && step === 'BROWSING') {
-                const top = (window.EVENTS || []).slice(0, 6);
+            } else if (isNumeric && n >= 1 && n <= 10 && step === 'BROWSING') {
+                const top = (window.EVENTS || []).slice(0, 10);
                 if (top[n - 1]) {
                     doSelectEvent(top[n - 1]);
                 } else {
