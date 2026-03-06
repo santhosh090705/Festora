@@ -30,10 +30,10 @@ const Toast = (() => {
     return { show, success: (m) => show(m, 'success'), error: (m) => show(m, 'error'), info: (m) => show(m, 'info') };
 })();
 
-// ---- CONFIGURATION (REPLACE WITH YOUR KEYS) ----
-const SUPABASE_URL = 'https://awdoignuguvsktagucdo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3ZG9pZ251Z3V2c2t0YWd1Y2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzM1MjAsImV4cCI6MjA4Nzg0OTUyMH0.Uezm4wV5C_9YEVFEBEP4tGIzo_gHMWFmSZnzftTLHnY';
-const RAZORPAY_KEY = 'YOUR_RAZORPAY_KEY_ID';
+// ---- CONFIGURATION (Loads from js/config.js, ignored by Git) ----
+const SUPABASE_URL = (window.CONFIG && window.CONFIG.SUPABASE_URL) || 'https://awdoignuguvsktagucdo.supabase.co';
+const SUPABASE_ANON_KEY = (window.CONFIG && window.CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3ZG9pZ251Z3V2c2t0YWd1Y2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzM1MjAsImV4cCI6MjA4Nzg0OTUyMH0.Uezm4wV5C_9YEVFEBEP4tGIzo_gHMWFmSZnzftTLHnY';
+const RAZORPAY_KEY = (window.CONFIG && window.CONFIG.RAZORPAY_KEY) || 'YOUR_RAZORPAY_KEY_ID';
 
 const supabaseClient = window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL'
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
